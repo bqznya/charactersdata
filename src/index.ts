@@ -7,7 +7,6 @@ import { Request } from 'express';
 
 const app = express();
 
-// 1. Добавим проверку папки uploads
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -16,12 +15,7 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// 2. Переместили CORS выше
-app.use(cors({
-  origin: 'http://localhost:3000',
-}));
 
-// 3. Убрали дублирующиеся объявления интерфейсов
 interface Character {
   id: number;
   name: string;
@@ -48,7 +42,6 @@ interface RequestWithFile extends Request {
   file?: Express.Multer.File;
 }
 
-// 4. Настройка Multer вынесена отдельно
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => {
@@ -60,7 +53,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 const defaultImage = '/uploads/image.webp';
 
-// 5. Убраны дублирующиеся роуты
 const dataFilePath = path.join(__dirname, '..', 'data', 'data.json');
 
 function readData(): Character[] {
@@ -74,7 +66,6 @@ function writeData(data: Character[]) {
   fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
 }
 
-// 6. Исправленные роуты
 app.post('/api/characters', upload.single('image'), (req: RequestWithFile, res) => {
   const characters = readData();
 
@@ -98,7 +89,6 @@ app.put('/api/characters/:id', upload.single('image'), (req: RequestWithFile, re
     return res.status(404).json({ error: 'Character not found' });
   }
 
-  // Извлекаем остальные поля, исключая id
   const { id: _, ...otherFields } = req.body;
 
   characters[index] = {
@@ -111,7 +101,6 @@ app.put('/api/characters/:id', upload.single('image'), (req: RequestWithFile, re
   res.json(characters[index]);
 });
 
-// 7. Убраны дублирующиеся GET/PUT/DELETE роуты
 app.get('/api/characters/:id', (req, res) => {
   const id = Number(req.params.id);
   const characters = readData();
@@ -140,9 +129,4 @@ app.delete('/api/characters/:id', (req, res) => {
   const deletedCharacter = characters.splice(index, 1);
   writeData(characters);
   res.json({ message: 'Character deleted', deletedCharacter });
-});
-
-const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
 });
